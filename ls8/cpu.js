@@ -144,6 +144,11 @@ class CPU {
         this.stopClock();
     }
 
+     /**
+     * Handle HALT
+     */
+
+
     SUB() {
         const reg1 = this.mem[this.reg.PC + 1];
         const reg2 = this.mem[this.reg.PC + 2];
