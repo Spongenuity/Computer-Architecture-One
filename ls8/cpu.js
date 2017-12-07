@@ -7,6 +7,8 @@ const HALT = 0b00000000;
 const SUB  = 0b00001101;
 const ADD  = 0b00001111;
 const DIV  = 0b00001001;
+const INC  = 0b00001011;
+const DEC  = 0b00010001;
 
 
 class CPU {
@@ -37,7 +39,9 @@ class CPU {
 
             [SUB]: this.SUB,
             [ADD]: this.ADD,
-            [DIV]: this.DIV
+            [DIV]: this.DIV,
+            [INC]: this.INC,
+            [DEC]: this.DEC
         };
     }
 
@@ -186,6 +190,15 @@ class CPU {
         console.log("DIV " + regVal0 + " " +regVal1);
         this.reg.PC += 3; 
         }
+    }
+
+    INC() {
+        this.reg.PC ++
+        }
+    
+
+    DEC() {
+        this.reg.PC --
     }
     
     
