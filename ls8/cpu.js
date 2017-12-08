@@ -9,6 +9,20 @@ const ADD  = 0b00001111;
 const DIV  = 0b00001001;
 const INC  = 0b00001011;
 const DEC  = 0b00010001;
+const PUSH = 0b00011001;
+const POP  = 0b00011101;
+
+const SP = 0xff;
+
+
+
+
+/**
+ * Beej's debug console log trick
+ */
+function debug(e){
+    console.log(e)
+}
 
 
 class CPU {
@@ -41,7 +55,9 @@ class CPU {
             [ADD]: this.ADD,
             [DIV]: this.DIV,
             [INC]: this.INC,
-            [DEC]: this.DEC
+            [DEC]: this.DEC,
+            [PUSH]: this.PUSH,
+            [POP]: this.POP,
         };
     }
 
@@ -66,6 +82,70 @@ class CPU {
         clearInterval(this.clock);
     }
 
+
+
+
+    /**
+     * Implemented ALU to make life easier
+     */
+
+    alu(OP, R0, R1){
+        let regVal0, regVal1;
+
+        switch(OP){
+            case 'MUL':
+                regVal0 = this.reg[R0];
+                regVal1 = this.reg[R1];
+                console.log("MUL " + regVal0 + " " +regVal1);
+
+                this.reg[this.curReg] = regVal0 * regVal1;
+                break;
+
+            case 'SUB':
+                regVal0 = this.reg[R0];
+                regVal1 = this.reg[R1];
+                console.log("SUB " + regVal0 + " " +regVal1);
+
+                this.reg[this.curReg] = regVal0 - regVal1;
+                break;
+            
+            case 'ADD':
+                regVal0 = this.reg[R0];
+                regVal1 = this.reg[R1];
+                console.log("ADD " + regVal0 + " " +regVal1);
+
+
+
+                this.reg[this.curReg] = regVal0 + regVal1;
+                break;
+
+            case 'DIV':
+                regVal0 = this.reg[R0];
+                regVal1 = this.reg[R1];
+
+                if(regVal1 === 0){
+                    console.log("Error: Cannot Divide By 0")
+                    this.stopClock();
+                }
+                console.log("DIV " + regVal0 + " " +regVal1);
+
+                this.reg[this.curReg] = regVal0 / regVal1;
+                break;
+
+            case 'INC':
+                regVal0 = this.reg[R0] + 1;
+                if (regVal0 > 255) {regVal0 = 0}
+                this.reg[R0] = regVal0;
+                break;
+            
+            case 'DEC':
+                regVal0 = this.reg[R0] - 1;
+                if (regVal0 < 0) {regVal0 = 255}
+                this.reg[R0] = regVal0;
+                break;
+        }
+    }
+
     /**
      * Each tick of the clock
      */
@@ -84,6 +164,9 @@ class CPU {
         handler.call(this);  // set this explicitly in handler
     }
 
+
+
+
     /**
      * Handle INIT
      */
@@ -91,7 +174,8 @@ class CPU {
         console.log("INIT");
         this.curReg = 0;
 
-        this.reg.PC++; // go to next instruction
+        // this.reg.PC++; // go to next instruction
+        this.alu('INC', 'PC');
     }
 
     /**
@@ -99,11 +183,14 @@ class CPU {
      */
     SET() {
         const reg = this.mem[this.reg.PC + 1];
-        console.log("SET " + reg);
+        // console.log("SET " + reg);
+        debug("SET " + reg)
 
         this.curReg = reg;
 
-        this.reg.PC += 2;  // go to next instruction
+        // this.reg.PC += 2;  // go to next instruction
+        this.alu('INC', 'PC');
+        this.alu('INC', 'PC');
     }
 
     /**
@@ -111,10 +198,13 @@ class CPU {
      */
     SAVE() {
         const val = this.mem[this.reg.PC + 1];
-        console.log("SAVE " + val);
+        // console.log("SAVE " + val);
+        debug("SAVE " + val)
         // Store the value in the current register
         this.reg[this.curReg] = val;
-        this.reg.PC += 2;  // go to next instruction
+        // this.reg.PC += 2;  // go to next instruction
+        this.alu('INC', 'PC');
+        this.alu('INC', 'PC');
     }
 
     /**
@@ -123,12 +213,16 @@ class CPU {
     MUL() {
         const reg1 = this.mem[this.reg.PC + 1];
         const reg2 = this.mem[this.reg.PC + 2];
-        const regVal0 = this.reg[reg1]
-        const regVal1 = this.reg[reg2]
-        // const prod =  this.reg[0] *= this.reg[1]
-        this.reg[this.curReg] = regVal0 * regVal1;
-        console.log("MUL " + regVal0 + " " +regVal1);
-        this.reg.PC += 3; 
+
+        // const regVal0 = this.reg[reg1]
+        // const regVal1 = this.reg[reg2]
+
+        
+        this.alu('MUL', reg1, reg2);
+
+        this.alu('INC', 'PC');
+        this.alu('INC', 'PC');
+        this.alu('INC', 'PC');
     }
 
     /**
@@ -156,48 +250,62 @@ class CPU {
     SUB() {
         const reg1 = this.mem[this.reg.PC + 1];
         const reg2 = this.mem[this.reg.PC + 2];
-        const regVal0 = this.reg[reg1]
-        const regVal1 = this.reg[reg2]
-        // const prod =  this.reg[0] *= this.reg[1]
-        this.reg[this.curReg] = regVal0 - regVal1;
-        console.log("SUB " + regVal0 + " " +regVal1);
-        this.reg.PC += 3; 
+
+        // console.log("SUB " + regVal0 + " " +regVal1);
+        this.alu('SUB', reg1, reg2);
+        
+        this.alu('INC', 'PC');
+        this.alu('INC', 'PC');
+        this.alu('INC', 'PC');
     }
 
     ADD() {
         const reg1 = this.mem[this.reg.PC + 1];
         const reg2 = this.mem[this.reg.PC + 2];
-        const regVal0 = this.reg[reg1]
-        const regVal1 = this.reg[reg2]
-        // const prod =  this.reg[0] *= this.reg[1]
-        this.reg[this.curReg] = regVal0 + regVal1;
-        console.log("ADD " + regVal0 + " " +regVal1);
-        this.reg.PC += 3; 
+
+        // console.log("ADD " + regVal0 + " " +regVal1);
+        this.alu('ADD', reg1, reg2);
+        
+        this.alu('INC', 'PC');
+        this.alu('INC', 'PC');
+        this.alu('INC', 'PC');
     }
 
     DIV() {
         const reg1 = this.mem[this.reg.PC + 1];
         const reg2 = this.mem[this.reg.PC + 2];
-        const regVal0 = this.reg[reg1]
-        const regVal1 = this.reg[reg2]
-        // const prod =  this.reg[0] *= this.reg[1]
-        if(regVal1 === 0){
-            console.log("Cannot Divide By 0")
-            this.stopClock();
-        }
-        else{
-        this.reg[this.curReg] = regVal0 / regVal1;
-        console.log("DIV " + regVal0 + " " +regVal1);
-        this.reg.PC += 3; 
-        }
+
+        // const regVal1 = this.reg[reg2]
+        // if(regVal1 === 0){
+        //     console.log("Cannot Divide By 0")
+        //     this.stopClock();
+        // }
+        // else{
+
+        this.alu('DIV', reg1, reg2);
+        // console.log("DIV " + regVal0 + " " +regVal1);
+
+        this.alu('INC', 'PC');
+        this.alu('INC', 'PC');
+        this.alu('INC', 'PC');
+        // }
     }
 
-    INC() {
+    // INC() {
+    //     this.reg.PC ++
+    //     }
+    
+
+    // DEC() {
+    //     this.reg.PC --
+    // }
+
+    PUSH() {
         this.reg.PC ++
         }
     
 
-    DEC() {
+    POP() {
         this.reg.PC --
     }
     
