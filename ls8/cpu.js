@@ -21,7 +21,7 @@ const SP = 0xff;
  * Beej's debug console log trick
  */
 function debug(e){
-    console.log(e)
+    // console.log(e)
 }
 
 
